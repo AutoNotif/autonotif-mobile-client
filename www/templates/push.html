@@ -1,0 +1,31 @@
+<ion-view title="Push">
+  <div class="bar bar-header bar-main">
+    <button class="button button-icon icon ion-arrow-left-c" ng-click="back()"></button>
+    <h1 class="title">{{name}}</h1>
+  </div>
+
+  <ion-content class="has-header">
+
+    <div class="list card">
+
+      <div class="item item-avatar">
+        <img src="avatar.jpg">
+        <h2>{{name}}</h2>
+        <p>{{time}}</p>
+      </div>
+
+
+      <div class="item item-body" href="#">
+        {{content}}
+      </div>
+
+      <a class="item item-icon-left assertive" href="#">
+        <i class="icon ion-close-round"></i>
+        Delete
+      </a>
+
+    </div>
+
+  </ion-content>
+</ion-content>
+</ion-view>

@@ -1,0 +1,32 @@
+<ion-view title="Home">
+  <div class="bar bar-header bar-main">
+    <h1 class="title">Pushes</h1>
+    <a class="button button-icon icon ion-gear-a" href="#/settings"></a>
+
+  </div>
+  <ion-content class="has-header">
+    <ion-refresher
+    pulling-text="Pull to refresh..."
+    on-refresh="doRefresh()">
+  </ion-refresher>
+    <div class="list">
+          <a ng-repeat="push in list track by $index" class="item item-avatar pushes" href="#/push/{{push.id}}">
+              <img src="{{push.img}}"/>
+              <h2>
+                  {{push.name}}
+              </h2>
+              <p>
+                {{push.content}}
+              </p>
+              <h3>
+                {{push.time}}
+              </h3>
+            </a>
+        </div>
+        <ion-infinite-scroll
+    on-infinite="loadMore()"
+    distance="1%">
+  </ion-infinite-scroll>
+</ion-content>
+  </ion-content>
+</ion-view>
