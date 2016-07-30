@@ -11,17 +11,17 @@
       <div class="list list-inset">
         <label class="item item-input">
           <i class="icon ion-person placeholder-icon"></i>
-          <input type="text" placeholder="Username">
+          <input type="text" placeholder="Username" ng-model="$parent.username">
         </label>
         <label class="item item-input">
           <i class="icon ion-key placeholder-icon"></i>
-          <input type="Password" placeholder="Password">
+          <input type="Password" placeholder="Password" ng-model="$parent.password">
         </label>
         <label class="item item-input">
           <i class="icon ion-cloud placeholder-icon"></i>
-          <input type="text" placeholder="Server">
+          <input type="text" placeholder="Server" ng-model="$parent.server">
         </label>
-        <button class="button button-block button-positive" ui-sref="home">
+        <button class="button button-block button-positive" ng-click="login()">
           Login
         </button>
       </div>
