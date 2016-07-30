@@ -13,7 +13,7 @@
           <a ng-repeat="push in list track by $index" class="item item-avatar pushes" href="#/push/{{push.id}}">
               <img src="{{push.img}}"/>
               <h2>
-                  {{push.name}}
+                  {{push.title}} {{push.id}}
               </h2>
               <p>
                 {{push.content}}

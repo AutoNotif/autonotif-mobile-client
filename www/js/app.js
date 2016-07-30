@@ -5,6 +5,7 @@
 // the 2nd parameter is an array of 'requires'
 var pushApp = angular.module('pushApp', ['ionic']);
 var reg_id;
+var logged_in = false;
 
 pushApp.run(function($ionicPlatform) {
   $ionicPlatform.ready(function() {
@@ -18,19 +19,31 @@ pushApp.run(function($ionicPlatform) {
       // a much nicer keyboard experience.
       cordova.plugins.Keyboard.disableScroll(true);
 
-      var push = PushNotification.init({
+
+      window.push = PushNotification.init({
         android: {
-          senderID: "1000189835312"
+          senderID: "1000189835312",
         },
       });
 
-      push.on('registration', function(data) {
-        cordova.plugins.clipboard.copy(data.registrationId);
+      window.push.on('registration', function(data) {
         reg_id = data.registrationId;
         // data.registrationId
       });
 
-      push.on('notification', function(data) {
+      window.push.on('notification', function(data) {
+
+        if(localStorage.getItem('messages')) {
+          var messages = JSON.parse(localStorage.getItem('messages'));
+          if(messages.indexOf({content:data.message, title:data.title, id:data.additionalData.id_token}) !== -1) {
+            return;
+          }
+
+          messages.push({content:data.message, title:data.title, id:data.additionalData.id_token});
+          localStorage.setItem('messages', JSON.stringify(messages));
+        } else {
+          localStorage.setItem('messages', JSON.stringify([{content:data.message, title:data.title, id:data.id}]));
+        }
         // data.message,
         // data.title,
         // data.count,
@@ -39,7 +52,7 @@ pushApp.run(function($ionicPlatform) {
         // data.additionalData
       });
 
-      push.on('error', function(e) {
+      window.push.on('error', function(e) {
         // e.message
       });
 
@@ -53,37 +66,32 @@ pushApp.run(function($ionicPlatform) {
 pushApp.factory('PushData', function () {
 
   var data = {
-    pushes: []
+    pushes: JSON.parse(localStorage.getItem('messages'))
   };
 
   return {
     getPushes: function () {
-      if(data.pushes.length === 0) {
-        for (var i = 0; i < 50; i++) {
-          data.pushes.push({id:i, name:'Title', time:'27/07/2016 - 00:40', content:'Qui officia deserunt mollit anim id est laborum. Et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque. Nihil molestiae consequatur, vel illum qui dolorem eum. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit.'})
-        }
-      }
       return data.pushes;
     },
     add: function (pushData) {
-      console.log(data);
       data.pushes.push(pushData);
     },
     count: function() {
-      return data.pushes.length;
+      if(data.pushes) {
+        return data.pushes.length;
+      }
+      else return 0;
     },
     getPush: function(id) {
-      if(data.pushes.length === 0) {
-        for (var i = 0; i < 50; i++) {
-          data.pushes.add({id:i, name:'Title', time:'27/07/2016 - 00:40', content:'Qui officia deserunt mollit anim id est laborum. Et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque. Nihil molestiae consequatur, vel illum qui dolorem eum. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit.'})
-        }
-      }
       for (var i = 0; i < data.pushes.length; i++) {
         if(data.pushes[i].id === id) {
           return data.pushes[i];
         }
       }
       return null;
+    },
+    refreshPushes: function() {
+      data.pushes = JSON.parse(localStorage.getItem('messages'));
     }
   };
 });
@@ -95,6 +103,10 @@ pushApp.controller('MainCtrl', function($scope, $state) {
 
 pushApp.controller('LoginCtrl', function($scope, $state, $http, $ionicPopup, $location) {
   "use strict";
+
+  if(localStorage.getItem('logged_in')) {
+    $location.path('home')
+  }
 
   $scope.username = 'user';
   $scope.password = 'password';
@@ -113,6 +125,7 @@ pushApp.controller('LoginCtrl', function($scope, $state, $http, $ionicPopup, $lo
           })
           .then(function(data) {
             if(data.data.success) {
+              localStorage.setItem("logged_in", true);
               $location.path('home')
             } else {
               $ionicPopup.alert(
@@ -144,14 +157,38 @@ pushApp.controller('SettingsCtrl', function($scope, $state, $ionicHistory) {
   }
 })
 
-pushApp.controller('PushCtrl', function($scope, $state, $stateParams, PushData, $ionicHistory) {
+pushApp.controller('PushCtrl', function($scope, $state, $stateParams, $ionicPopup, PushData, $ionicHistory, $location) {
   "use strict";
 
-  var push = PushData.getPush(parseInt($stateParams.id))
+  var push = PushData.getPush($stateParams.id)
 
-  $scope.name = push.name;
+  if(!push) {
+    $location.path('home');
+    return;
+  }
+  $scope.name = push.title;
   $scope.content = push.content;
-  $scope.time = push.time;
+  // $scope.time = push.time;
+
+  $scope.delete = () => {
+    console.log();
+
+      var confirmPopup = $ionicPopup.confirm({
+        title: 'Delete push',
+        template: 'Are you sure you want to delete this push?'
+      });
+
+      confirmPopup.then(function(res) {
+        if(res) {
+          var messages = JSON.parse(localStorage.getItem('messages'));
+          PushData.refreshPushes();
+          messages.splice(PushData.getPushes().indexOf(push), 1);
+          localStorage.setItem('messages', JSON.stringify(messages));
+          $location.path('home');
+        }
+      });
+
+  }
 
   $scope.back = () => {
     $ionicHistory.goBack();
@@ -161,18 +198,18 @@ pushApp.controller('PushCtrl', function($scope, $state, $stateParams, PushData, 
 pushApp.controller('HomeCtrl', function($scope, $state, PushData) {
   "use strict";
 
-  $scope.list = PushData.getPushes().slice(-25).reverse();
-  let lastLength = PushData.getPushes().length;
-
-  //for testing
-  window.addMore = () => {
-    PushData.add({id:PushData.count(), name:'Title', time:'27/07/2016 - 00:40', content:'IT WERKS'})
+  if(PushData.count() > 0) {
+    $scope.list = PushData.getPushes().reverse()
   }
 
 
   $scope.doRefresh = () => {
-    $scope.list = PushData.getPushes().slice(lastLength).reverse().concat($scope.list);
-    lastLength = PushData.getPushes().length;
+
+    PushData.refreshPushes();
+
+    if(PushData.count() > 0) {
+      $scope.list = PushData.getPushes().reverse();
+    }
     $scope.$broadcast('scroll.refreshComplete');
   }
 
